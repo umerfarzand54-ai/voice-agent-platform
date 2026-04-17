@@ -1,0 +1,187 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-slate-50">
+    <%!-- Header --%>
+    <div class="bg-white border-b border-slate-200 px-8 py-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p class="text-sm text-slate-500 mt-0.5">AI Voice Agent Platform</p>
+        </div>
+        <.link navigate={~p"/campaigns/new"} class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <.icon name="hero-phone-arrow-up-right" class="w-4 h-4" />
+          New Campaign
+        </.link>
+      </div>
+    </div>
+
+    <div class="px-8 py-6 space-y-6">
+      <%!-- Stats Row --%>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Calls</span>
+            <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <.icon name="hero-phone" class="w-4 h-4 text-indigo-600" />
+            </div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900">{@stats.total_today}</div>
+          <div class="text-xs text-slate-400 mt-1">{@stats.completed_today} completed</div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Active Now</span>
+            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900">{@stats.active_now}</div>
+          <div class="text-xs text-slate-400 mt-1">live calls in progress</div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Goal Rate</span>
+            <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <.icon name="hero-check-circle" class="w-4 h-4 text-emerald-600" />
+            </div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900">{@stats.goal_rate}%</div>
+          <div class="text-xs text-slate-400 mt-1">goals achieved today</div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Avg Duration</span>
+            <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+              <.icon name="hero-clock" class="w-4 h-4 text-amber-600" />
+            </div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900">{format_duration(@stats.avg_duration)}</div>
+          <div class="text-xs text-slate-400 mt-1">per call today</div>
+        </div>
+      </div>
+
+      <%!-- Active Calls + Recent Calls --%>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <%!-- Active Calls --%>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800">Live Calls</h2>
+            <div class="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              Real-time
+            </div>
+          </div>
+          <div id="active-calls" phx-update="stream" class="divide-y divide-slate-50">
+            <div class="hidden only:flex px-6 py-10 items-center justify-center text-sm text-slate-400">
+              <div class="text-center">
+                <.icon name="hero-phone-x-mark" class="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                No active calls
+              </div>
+            </div>
+            <div :for={{id, call} <- @streams.active_calls} id={id} class="px-6 py-4 hover:bg-slate-50 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-sm font-semibold">
+                    {String.first(call.contact && call.contact.name || "?")}
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-slate-800">
+                      {call.contact && call.contact.name || call.from_number || call.to_number}
+                    </div>
+                    <div class="text-xs text-slate-400">
+                      {call.ai_agent && call.ai_agent.name || "Unknown agent"}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class={["text-xs px-2 py-0.5 rounded-full font-medium", status_color(call.status)]}>
+                    {call.status |> String.replace("_", " ")}
+                  </span>
+                  <.link navigate={~p"/calls/#{call.id}"} class="text-indigo-600 hover:text-indigo-800">
+                    <.icon name="hero-arrow-top-right-on-square" class="w-4 h-4" />
+                  </.link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Recent Calls --%>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800">Recent Calls</h2>
+            <.link navigate={~p"/calls"} class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+              View all →
+            </.link>
+          </div>
+          <div id="recent-calls" phx-update="stream" class="divide-y divide-slate-50">
+            <div class="hidden only:flex px-6 py-10 items-center justify-center text-sm text-slate-400">
+              <div class="text-center">
+                <.icon name="hero-clock" class="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                No calls yet
+              </div>
+            </div>
+            <div :for={{id, call} <- @streams.recent_calls} id={id} class="px-6 py-3 hover:bg-slate-50 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class={["w-7 h-7 rounded-full flex items-center justify-center", if(call.direction == "inbound", do: "bg-blue-100", else: "bg-purple-100")]}>
+                    <.icon name={if call.direction == "inbound", do: "hero-phone-arrow-down-left", else: "hero-phone-arrow-up-right"} class={["w-3.5 h-3.5", if(call.direction == "inbound", do: "text-blue-600", else: "text-purple-600")]} />
+                  </div>
+                  <div>
+                    <div class="text-sm text-slate-700">{call.contact && call.contact.name || call.from_number}</div>
+                    <div class="text-xs text-slate-400">{format_duration(call.duration_seconds)}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <%= if call.sentiment do %>
+                    <.icon name={sentiment_icon(call.sentiment)} class={["w-4 h-4", sentiment_color(call.sentiment)]} />
+                  <% end %>
+                  <.link navigate={~p"/calls/#{call.id}"} class="text-slate-400 hover:text-indigo-600">
+                    <.icon name="hero-chevron-right" class="w-4 h-4" />
+                  </.link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Quick Nav --%>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <.link navigate={~p"/agents"} class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all group">
+          <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-indigo-600 transition-colors">
+            <.icon name="hero-cpu-chip" class="w-5 h-5 text-indigo-600 group-hover:text-white" />
+          </div>
+          <div class="font-semibold text-slate-800">AI Agents</div>
+          <div class="text-xs text-slate-400 mt-0.5">Configure voice agents</div>
+        </.link>
+
+        <.link navigate={~p"/voice-profiles"} class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group">
+          <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-purple-600 transition-colors">
+            <.icon name="hero-microphone" class="w-5 h-5 text-purple-600 group-hover:text-white" />
+          </div>
+          <div class="font-semibold text-slate-800">Voice Cloning</div>
+          <div class="text-xs text-slate-400 mt-0.5">Manage custom voices</div>
+        </.link>
+
+        <.link navigate={~p"/campaigns"} class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-amber-300 hover:shadow-md transition-all group">
+          <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-amber-500 transition-colors">
+            <.icon name="hero-megaphone" class="w-5 h-5 text-amber-600 group-hover:text-white" />
+          </div>
+          <div class="font-semibold text-slate-800">Campaigns</div>
+          <div class="text-xs text-slate-400 mt-0.5">Outbound call campaigns</div>
+        </.link>
+
+        <.link navigate={~p"/contacts"} class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all group">
+          <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-emerald-600 transition-colors">
+            <.icon name="hero-users" class="w-5 h-5 text-emerald-600 group-hover:text-white" />
+          </div>
+          <div class="font-semibold text-slate-800">Contacts</div>
+          <div class="text-xs text-slate-400 mt-0.5">Manage your leads</div>
+        </.link>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

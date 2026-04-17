@@ -1,0 +1,92 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-slate-50">
+    <div class="bg-white border-b border-slate-200 px-8 py-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Campaigns</h1>
+          <p class="text-sm text-slate-500 mt-0.5">Manage your outbound calling campaigns</p>
+        </div>
+        <.link navigate={~p"/campaigns/new"} class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <.icon name="hero-plus" class="w-4 h-4" />
+          New Campaign
+        </.link>
+      </div>
+    </div>
+
+    <div class="px-8 py-6">
+      <div id="campaigns" phx-update="stream" class="space-y-4">
+        <div class="hidden only:flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl border border-slate-200">
+          <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-4">
+            <.icon name="hero-megaphone" class="w-8 h-8 text-amber-500" />
+          </div>
+          <h3 class="text-lg font-semibold text-slate-700">No campaigns yet</h3>
+          <p class="text-sm text-slate-400 mt-1 mb-4">Create your first outbound campaign to reach customers at scale</p>
+          <.link navigate={~p"/campaigns/new"} class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
+            Create Campaign
+          </.link>
+        </div>
+
+        <div :for={{id, campaign} <- @streams.campaigns} id={id} class="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div class="p-6 flex items-center gap-5">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-1">
+                <h3 class="font-semibold text-slate-800 text-lg">{campaign.name}</h3>
+                <span class={["text-xs px-2 py-0.5 rounded-full font-medium", status_color(campaign.status)]}>
+                  {campaign.status}
+                </span>
+              </div>
+              <p class="text-sm text-slate-500">{campaign.description || "No description"}</p>
+              <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
+                <%= if campaign.ai_agent do %>
+                  <span class="flex items-center gap-1">
+                    <.icon name="hero-cpu-chip" class="w-3.5 h-3.5" />
+                    {campaign.ai_agent.name}
+                  </span>
+                <% end %>
+                <span class="flex items-center gap-1">
+                  <.icon name="hero-users" class="w-3.5 h-3.5" />
+                  {campaign.total_contacts} contacts
+                </span>
+                <span class="flex items-center gap-1">
+                  <.icon name="hero-arrow-path" class="w-3.5 h-3.5" />
+                  Up to {campaign.max_attempts} attempts
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <.link navigate={~p"/campaigns/#{campaign.id}"} class="text-slate-500 hover:text-indigo-600 border border-slate-200 px-3 py-1.5 rounded-lg text-sm hover:border-indigo-300 transition-colors">
+                View
+              </.link>
+
+              <%= cond do %>
+                <% campaign.status == "draft" or campaign.status == "paused" -> %>
+                  <button phx-click="start" phx-value-id={campaign.id}
+                    class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                    <.icon name="hero-play" class="w-3.5 h-3.5" />
+                    Start
+                  </button>
+                <% campaign.status == "running" -> %>
+                  <button phx-click="pause" phx-value-id={campaign.id}
+                    class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                    <.icon name="hero-pause" class="w-3.5 h-3.5" />
+                    Pause
+                  </button>
+                <% true -> %>
+              <% end %>
+
+              <.link navigate={~p"/campaigns/#{campaign.id}/edit"} class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+                <.icon name="hero-pencil" class="w-4 h-4" />
+              </.link>
+              <button phx-click="delete" phx-value-id={campaign.id}
+                data-confirm={"Delete #{campaign.name}?"}
+                class="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50">
+                <.icon name="hero-trash" class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

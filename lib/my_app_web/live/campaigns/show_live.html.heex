@@ -1,0 +1,98 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-slate-50">
+    <div class="bg-white border-b border-slate-200 px-8 py-5">
+      <div class="flex items-center gap-3">
+        <.link navigate={~p"/campaigns"} class="text-slate-400 hover:text-slate-600">
+          <.icon name="hero-arrow-left" class="w-5 h-5" />
+        </.link>
+        <div class="flex-1">
+          <h1 class="text-2xl font-bold text-slate-900">{@campaign.name}</h1>
+          <p class="text-sm text-slate-500 mt-0.5">{@campaign.description || "Outbound campaign"}</p>
+        </div>
+        <.link navigate={~p"/campaigns/#{@campaign.id}/edit"} class="border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+          Edit
+        </.link>
+      </div>
+    </div>
+
+    <div class="px-8 py-6 space-y-6">
+      <%!-- Stats --%>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
+          <div class="text-2xl font-bold text-slate-900">{@stats.total}</div>
+          <div class="text-xs text-slate-400 mt-0.5">Total</div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
+          <div class="text-2xl font-bold text-amber-600">{@stats.pending}</div>
+          <div class="text-xs text-slate-400 mt-0.5">Pending</div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
+          <div class="text-2xl font-bold text-blue-600">{@stats.in_progress}</div>
+          <div class="text-xs text-slate-400 mt-0.5">In Progress</div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
+          <div class="text-2xl font-bold text-emerald-600">{@stats.completed}</div>
+          <div class="text-xs text-slate-400 mt-0.5">Completed</div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
+          <div class="text-2xl font-bold text-red-500">{@stats.failed}</div>
+          <div class="text-xs text-slate-400 mt-0.5">Failed</div>
+        </div>
+      </div>
+
+      <%!-- Progress Bar --%>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-slate-700">Campaign Progress</span>
+          <span class="text-sm font-bold text-slate-900">{progress_pct(@stats)}%</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-3">
+          <div class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style={"width: #{progress_pct(@stats)}%"}></div>
+        </div>
+      </div>
+
+      <%!-- Contact List --%>
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-800">Contacts</h2>
+          <form phx-change="filter_status">
+            <select name="status" class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700">
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
+          </form>
+        </div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50">
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Phone</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Attempts</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Outcome</th>
+            </tr>
+          </thead>
+          <tbody id="contacts" phx-update="stream" class="divide-y divide-slate-50">
+            <tr class="hidden only:table-row">
+              <td colspan="5" class="px-5 py-12 text-center text-slate-400 text-sm">No contacts in this campaign</td>
+            </tr>
+            <tr :for={{id, cc} <- @streams.contacts} id={id} class="hover:bg-slate-50">
+              <td class="px-5 py-3 font-medium text-slate-800">{cc.contact && cc.contact.name || "Unknown"}</td>
+              <td class="px-5 py-3 text-slate-500 font-mono text-xs">{cc.contact && cc.contact.phone_number}</td>
+              <td class="px-5 py-3">
+                <span class={["text-xs px-2 py-0.5 rounded-full font-medium", status_color(cc.status)]}>
+                  {cc.status |> String.replace("_", " ")}
+                </span>
+              </td>
+              <td class="px-5 py-3 text-slate-500">{cc.attempts}</td>
+              <td class="px-5 py-3 text-slate-500 capitalize">{cc.outcome || "—"}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

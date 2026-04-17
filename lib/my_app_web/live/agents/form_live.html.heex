@@ -1,0 +1,103 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-slate-50">
+    <div class="bg-white border-b border-slate-200 px-8 py-5">
+      <div class="flex items-center gap-3">
+        <.link navigate={~p"/agents"} class="text-slate-400 hover:text-slate-600">
+          <.icon name="hero-arrow-left" class="w-5 h-5" />
+        </.link>
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">{@page_title}</h1>
+          <p class="text-sm text-slate-500 mt-0.5">Configure your AI voice agent's personality and settings</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-8 py-6 max-w-4xl">
+      <.form for={@form} id="agent-form" phx-change="validate" phx-submit="save" class="space-y-6">
+        <%!-- Basic Info --%>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <.icon name="hero-identification" class="w-5 h-5 text-indigo-500" />
+            Basic Information
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <.input field={@form[:name]} type="text" label="Agent Name" placeholder="e.g. Sales Bot - Hindi" />
+            <.input field={@form[:language_code]} type="select" label="Primary Language"
+              options={@language_options} />
+            <div class="md:col-span-2">
+              <.input field={@form[:description]} type="textarea" label="Description" rows="2"
+                placeholder="Brief description of what this agent does..." />
+            </div>
+          </div>
+        </div>
+
+        <%!-- Voice Configuration --%>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <.icon name="hero-microphone" class="w-5 h-5 text-purple-500" />
+            Voice Configuration
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <.input field={@form[:voice_provider]} type="select" label="Voice Provider"
+              options={[{"ElevenLabs (Voice Cloning)", "elevenlabs"}, {"Sarvam AI (Indian Languages)", "sarvam"}, {"Twilio TTS", "twilio"}]} />
+            <.input field={@form[:voice_id]} type="text" label="Voice ID"
+              placeholder="ElevenLabs or Sarvam voice ID" />
+          </div>
+          <p class="text-xs text-slate-400 mt-3">
+            For ElevenLabs: Create a cloned voice in <.link navigate={~p"/voice-profiles"} class="text-indigo-500 hover:underline">Voice Profiles</.link> then paste the voice ID here.
+            For Sarvam: Use speaker names like meera, pavithra, kendra, etc.
+          </p>
+        </div>
+
+        <%!-- AI Prompts --%>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <.icon name="hero-sparkles" class="w-5 h-5 text-amber-500" />
+            AI Conversation
+          </h2>
+          <div class="space-y-4">
+            <div>
+              <.input field={@form[:system_prompt]} type="textarea" label="System Prompt" rows="6"
+                placeholder="You are a helpful sales agent for Acme Corp. Your goal is to...
+
+When the user asks about pricing, always mention our special offer of...
+When you have achieved the goal or the conversation naturally concludes, add [END_CALL] at the end of your response." />
+              <p class="text-xs text-slate-400 mt-1">Define the agent's personality, goals, and behavior. Include [END_CALL] trigger instructions.</p>
+            </div>
+            <.input field={@form[:initial_greeting]} type="text" label="Opening Greeting"
+              placeholder="Namaste! Main Acme Corp se Priya bol rahi hoon. Kya aap hamare offer ke baare mein jaanna chahte hain?" />
+            <.input field={@form[:fallback_message]} type="text" label="Fallback Message"
+              placeholder="I didn't catch that. Could you please repeat?" />
+          </div>
+        </div>
+
+        <%!-- LLM Settings --%>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <.icon name="hero-cog-6-tooth" class="w-5 h-5 text-slate-500" />
+            Advanced Settings
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <.input field={@form[:llm_model]} type="select" label="AI Model"
+              options={@model_options} />
+            <.input field={@form[:llm_temperature]} type="number" label="Temperature"
+              min="0" max="2" step="0.1" placeholder="0.7" />
+            <.input field={@form[:max_call_duration]} type="number" label="Max Duration (s)"
+              min="60" max="3600" placeholder="600" />
+            <.input field={@form[:silence_timeout]} type="number" label="Silence Timeout (s)"
+              min="2" max="30" placeholder="5" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors">
+            {if @live_action == :new, do: "Create Agent", else: "Save Changes"}
+          </button>
+          <.link navigate={~p"/agents"} class="text-slate-500 hover:text-slate-700 px-4 py-2.5 font-medium">
+            Cancel
+          </.link>
+        </div>
+      </.form>
+    </div>
+  </div>
+</Layouts.app>

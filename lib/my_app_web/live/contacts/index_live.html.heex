@@ -1,0 +1,90 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-slate-50">
+    <div class="bg-white border-b border-slate-200 px-8 py-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Contacts</h1>
+          <p class="text-sm text-slate-500 mt-0.5">Your contact database</p>
+        </div>
+        <.link navigate={~p"/contacts/new"} class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <.icon name="hero-plus" class="w-4 h-4" />
+          Add Contact
+        </.link>
+      </div>
+    </div>
+
+    <div class="px-8 py-4">
+      <form phx-change="search" class="mb-4">
+        <div class="relative max-w-sm">
+          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input type="text" name="search" value={@search} placeholder="Search contacts..."
+            class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+        </div>
+      </form>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50">
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Phone</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Language</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">CRM</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+              <th class="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="contacts" phx-update="stream" class="divide-y divide-slate-50">
+            <tr class="hidden only:table-row">
+              <td colspan="6" class="px-5 py-16 text-center text-slate-400">
+                <.icon name="hero-users" class="w-10 h-10 mx-auto mb-3 text-slate-300" />
+                No contacts found
+              </td>
+            </tr>
+            <tr :for={{id, contact} <- @streams.contacts} id={id} class="hover:bg-slate-50">
+              <td class="px-5 py-3.5">
+                <div class="font-medium text-slate-800">{contact.name || "Unknown"}</div>
+                <div class="text-xs text-slate-400">{contact.email}</div>
+              </td>
+              <td class="px-5 py-3.5 font-mono text-xs text-slate-600">{contact.phone_number}</td>
+              <td class="px-5 py-3.5 text-slate-500 text-xs">{contact.language_pref}</td>
+              <td class="px-5 py-3.5">
+                <%= if contact.crm_source do %>
+                  <span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full capitalize">{contact.crm_source}</span>
+                <% else %>
+                  <span class="text-slate-300">—</span>
+                <% end %>
+              </td>
+              <td class="px-5 py-3.5">
+                <%= if contact.opted_out do %>
+                  <span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Opted Out</span>
+                <% else %>
+                  <span class="text-xs bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">Active</span>
+                <% end %>
+              </td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2">
+                  <.link navigate={~p"/contacts/#{contact.id}/edit"} class="text-slate-400 hover:text-indigo-600">
+                    <.icon name="hero-pencil" class="w-4 h-4" />
+                  </.link>
+                  <%= unless contact.opted_out do %>
+                    <button phx-click="opt_out" phx-value-id={contact.id}
+                      data-confirm="Mark as opted out?"
+                      class="text-amber-400 hover:text-amber-600">
+                      <.icon name="hero-no-symbol" class="w-4 h-4" />
+                    </button>
+                  <% end %>
+                  <button phx-click="delete" phx-value-id={contact.id}
+                    data-confirm="Delete this contact?"
+                    class="text-red-400 hover:text-red-600">
+                    <.icon name="hero-trash" class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

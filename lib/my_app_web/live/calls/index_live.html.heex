@@ -1,0 +1,90 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-slate-50">
+    <div class="bg-white border-b border-slate-200 px-8 py-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Call History</h1>
+          <p class="text-sm text-slate-500 mt-0.5">All inbound and outbound calls</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-8 py-4">
+      <%!-- Filters --%>
+      <form phx-change="filter" class="flex items-center gap-3 mb-5">
+        <select name="status" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          <option value="">All Statuses</option>
+          <option value="in_progress" selected={@filter_status == "in_progress"}>In Progress</option>
+          <option value="completed" selected={@filter_status == "completed"}>Completed</option>
+          <option value="failed" selected={@filter_status == "failed"}>Failed</option>
+          <option value="no_answer" selected={@filter_status == "no_answer"}>No Answer</option>
+          <option value="busy" selected={@filter_status == "busy"}>Busy</option>
+        </select>
+        <select name="direction" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          <option value="">All Directions</option>
+          <option value="inbound" selected={@filter_direction == "inbound"}>Inbound</option>
+          <option value="outbound" selected={@filter_direction == "outbound"}>Outbound</option>
+        </select>
+      </form>
+
+      <%!-- Table --%>
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50">
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Direction</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Agent</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Outcome</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Duration</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Language</th>
+              <th class="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="calls" phx-update="stream" class="divide-y divide-slate-50">
+            <tr class="hidden only:table-row">
+              <td colspan="8" class="px-5 py-16 text-center text-slate-400">
+                <.icon name="hero-phone-x-mark" class="w-10 h-10 mx-auto mb-3 text-slate-300" />
+                No calls found
+              </td>
+            </tr>
+            <tr :for={{id, call} <- @streams.calls} id={id} class="hover:bg-slate-50 transition-colors">
+              <td class="px-5 py-3.5">
+                <div class="font-medium text-slate-800">{call.contact && call.contact.name || "Unknown"}</div>
+                <div class="text-xs text-slate-400">{call.from_number || call.to_number}</div>
+              </td>
+              <td class="px-5 py-3.5">
+                <span class={["inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium",
+                  if(call.direction == "inbound", do: "bg-blue-100 text-blue-700", else: "bg-purple-100 text-purple-700")]}>
+                  <.icon name={if call.direction == "inbound", do: "hero-arrow-down-left", else: "hero-arrow-up-right"} class="w-3 h-3" />
+                  {call.direction}
+                </span>
+              </td>
+              <td class="px-5 py-3.5 text-slate-600">{call.ai_agent && call.ai_agent.name || "—"}</td>
+              <td class="px-5 py-3.5">
+                <% {label, cls} = status_badge(call.status) %>
+                <span class={["text-xs px-2 py-0.5 rounded-full font-medium", cls]}>{label}</span>
+              </td>
+              <td class="px-5 py-3.5">
+                <% {label, cls} = outcome_badge(call.outcome) %>
+                <%= if label do %>
+                  <span class={["text-xs px-2 py-0.5 rounded-full font-medium", cls]}>{label}</span>
+                <% else %>
+                  <span class="text-slate-300">—</span>
+                <% end %>
+              </td>
+              <td class="px-5 py-3.5 text-slate-600">{format_duration(call.duration_seconds)}</td>
+              <td class="px-5 py-3.5 text-slate-400 text-xs">{call.detected_language || "—"}</td>
+              <td class="px-5 py-3.5">
+                <.link navigate={~p"/calls/#{call.id}"} class="text-indigo-500 hover:text-indigo-700">
+                  <.icon name="hero-arrow-top-right-on-square" class="w-4 h-4" />
+                </.link>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layouts.app>
