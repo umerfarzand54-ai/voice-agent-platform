@@ -232,6 +232,19 @@ defmodule MyApp.Calls.CallSession do
     end
   end
 
+  def synthesize_greeting(_call_id, text, agent) do
+    result =
+      cond do
+        agent.voice_id -> ElevenLabs.synthesize(text, agent.voice_id)
+        true -> {:error, "No voice configured"}
+      end
+
+    case result do
+      {:ok, url} -> {url, 0}
+      {:error, _} -> {nil, 0}
+    end
+  end
+
   defp synthesize(text, state) do
     start = System.monotonic_time(:millisecond)
 

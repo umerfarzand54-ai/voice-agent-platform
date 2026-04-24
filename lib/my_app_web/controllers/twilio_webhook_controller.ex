@@ -37,10 +37,15 @@ defmodule MyAppWeb.TwilioWebhookController do
         greeting = agent.initial_greeting || "Hello! How can I help you today?"
         action_url = "#{base_url(conn)}/webhooks/twilio/voice/gather?call_id=#{call.id}"
 
+        {greeting_audio_url, _} = MyApp.Calls.CallSession.synthesize_greeting(call.id, greeting, agent)
+
+        greeting_opt =
+          if greeting_audio_url,
+            do: [play_url: "#{base_url(conn)}#{greeting_audio_url}"],
+            else: [say_text: greeting]
+
         Twilio.twiml_gather(
-          action: action_url,
-          language: agent.language_code,
-          say_text: greeting
+          [{:action, action_url}, {:language, agent.language_code}] ++ greeting_opt
         )
       else
         Twilio.twiml_voicemail("We're sorry, no agents are available. Please call back later.")
