@@ -20,7 +20,7 @@ defmodule MyAppWeb.DashboardLive do
     socket =
       socket
       |> assign(:stats, stats)
-      |> assign(:chart_data, Jason.encode!(chart_data))
+      |> assign(:chart_data, Jason.encode!(Enum.map(chart_data, fn {date, count} -> %{date: Date.to_string(date), count: count} end)))
       |> stream(:active_calls, active_calls)
       |> stream(:recent_calls, recent_calls)
       |> assign(:page_title, "Dashboard")

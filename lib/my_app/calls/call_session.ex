@@ -89,13 +89,11 @@ defmodule MyApp.Calls.CallSession do
     state = %{state | silence_count: new_silence}
 
     if new_silence >= 3 do
-      {:reply, {:hangup, nil}, %{state | should_hangup: true}}
+      {:reply, {:hangup, nil, nil}, %{state | should_hangup: true}}
     else
       fallback = state.agent.fallback_message || "I didn't catch that. Could you please repeat?"
-
       {audio_url, _latency} = synthesize(fallback, state)
-
-      {:reply, {:continue, audio_url}, state}
+      {:reply, {:continue, audio_url, fallback}, state}
     end
   end
 
@@ -147,16 +145,15 @@ defmodule MyApp.Calls.CallSession do
         new_state = %{state | context_window: updated_context, turn_count: turn_count, should_hangup: should_hangup}
 
         if should_hangup do
-          {:reply, {:hangup, audio_url}, new_state}
+          {:reply, {:hangup, audio_url, response_text}, new_state}
         else
-          {:reply, {:continue, audio_url}, new_state}
+          {:reply, {:continue, audio_url, response_text}, new_state}
         end
 
-      {:error, reason} ->
+      {:error, _reason} ->
         fallback = state.agent.fallback_message || "I'm having technical difficulties. Please try again."
         {audio_url, _} = synthesize(fallback, state)
-        {:reply, {:continue, audio_url}, state}
-        _ = reason
+        {:reply, {:continue, audio_url, fallback}, state}
     end
   end
 

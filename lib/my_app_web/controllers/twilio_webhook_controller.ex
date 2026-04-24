@@ -8,8 +8,8 @@ defmodule MyAppWeb.TwilioWebhookController do
   @doc "Handles inbound calls from Twilio"
   def inbound_voice(conn, params) do
     call_sid = params["CallSid"]
-    from = params["From"]
-    to = params["To"]
+    from = normalize_phone(params["From"])
+    to = normalize_phone(params["To"])
 
     agent = Agents.list_active_agents() |> List.first()
 
@@ -27,6 +27,7 @@ defmodule MyAppWeb.TwilioWebhookController do
         contact_id: contact.id
       })
 
+    call = MyApp.Repo.preload(call, [:contact, :ai_agent])
     Phoenix.PubSub.broadcast(MyApp.PubSub, "calls:active", {:call_started, call})
 
     twiml =
@@ -109,17 +110,17 @@ defmodule MyAppWeb.TwilioWebhookController do
 
       twiml =
         case result do
-          {:continue, nil} ->
-            Twilio.twiml_gather(action: action_url, language: agent_language, say_text: "I'm sorry, I couldn't generate a response. Please try again.")
+          {:continue, nil, text} ->
+            Twilio.twiml_gather(action: action_url, language: agent_language, say_text: text || "I'm sorry, I couldn't generate a response. Please try again.")
 
-          {:continue, audio_url} ->
+          {:continue, audio_url, _text} ->
             full_audio_url = "#{base_url(conn)}#{audio_url}"
             Twilio.twiml_gather(action: action_url, language: agent_language, play_url: full_audio_url)
 
-          {:hangup, nil} ->
-            Twilio.twiml_empty()
+          {:hangup, nil, text} ->
+            Twilio.twiml_voicemail(text || "Thank you for calling. Goodbye.")
 
-          {:hangup, audio_url} ->
+          {:hangup, audio_url, _text} ->
             full_audio_url = "#{base_url(conn)}#{audio_url}"
             Twilio.twiml_gather(farewell: true, language: agent_language, play_url: full_audio_url)
 
@@ -235,8 +236,25 @@ defmodule MyAppWeb.TwilioWebhookController do
     end
   end
 
+  defp normalize_phone(nil), do: nil
+  defp normalize_phone(phone) do
+    trimmed = String.trim(phone)
+    if String.starts_with?(trimmed, "+"), do: trimmed, else: "+" <> trimmed
+  end
+
   defp base_url(conn) do
-    scheme = if conn.scheme == :https, do: "https", else: "http"
-    "#{scheme}://#{conn.host}#{if conn.port not in [80, 443], do: ":#{conn.port}", else: ""}"
+    case System.get_env("APP_BASE_URL") do
+      nil ->
+        scheme = case Plug.Conn.get_req_header(conn, "x-forwarded-proto") do
+          [proto | _] -> proto
+          _ -> if conn.scheme == :https, do: "https", else: "http"
+        end
+        host = case Plug.Conn.get_req_header(conn, "x-forwarded-host") do
+          [h | _] -> h
+          _ -> conn.host
+        end
+        "#{scheme}://#{host}"
+      url -> url
+    end
   end
 end

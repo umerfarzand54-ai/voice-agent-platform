@@ -7,6 +7,14 @@
 # General application configuration
 import Config
 
+config :mime, :types, %{
+  "audio/mp4" => ["m4a"]
+}
+
+config :mime, :extensions, %{
+  "m4a" => "audio/mp4"
+}
+
 config :my_app,
   ecto_repos: [MyApp.Repo],
   generators: [timestamp_type: :utc_datetime],
