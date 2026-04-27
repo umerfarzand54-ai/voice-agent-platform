@@ -78,8 +78,12 @@ defmodule MyApp.Agents do
       |> Repo.update_all(set: [active: false])
 
       profile = get_voice_profile!(profile_id)
+      {:ok, updated_profile} = update_voice_profile(profile, %{active: true})
 
-      update_voice_profile(profile, %{active: true})
+      agent = get_agent!(agent_id)
+      update_agent(agent, %{voice_id: updated_profile.external_voice_id})
+
+      updated_profile
     end)
   end
 end

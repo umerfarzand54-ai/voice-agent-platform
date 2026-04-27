@@ -6,7 +6,7 @@ defmodule MyApp.Services.ElevenLabs do
   @base_url "https://api.elevenlabs.io/v1"
 
   def synthesize(text, voice_id, opts \\ []) do
-    model_id = Keyword.get(opts, :model_id, "eleven_multilingual_v2")
+    model_id = Keyword.get(opts, :model_id, "eleven_turbo_v2_5")
     stability = Keyword.get(opts, :stability, 0.5)
     similarity_boost = Keyword.get(opts, :similarity_boost, 0.75)
 
@@ -123,7 +123,7 @@ defmodule MyApp.Services.ElevenLabs do
 
     headers = [{"xi-api-key", api_key}]
 
-    case apply(Req, method, ["#{@base_url}#{path}", [headers: headers, form: form_data]]) do
+    case apply(Req, method, ["#{@base_url}#{path}", [headers: headers, form_multipart: form_data]]) do
       {:ok, %{status: status, body: body}} when status in 200..299 ->
         {:ok, body}
 

@@ -10,7 +10,7 @@ defmodule MyApp.Services.Twilio do
   def twiml_gather(opts \\ []) do
     action = Keyword.get(opts, :action, "/webhooks/twilio/voice/gather")
     language = Keyword.get(opts, :language, "en-IN")
-    timeout = Keyword.get(opts, :timeout, 5)
+    timeout = Keyword.get(opts, :timeout, 3)
     play_url = Keyword.get(opts, :play_url)
     say_text = Keyword.get(opts, :say_text)
     farewell = Keyword.get(opts, :farewell, false)
@@ -40,7 +40,7 @@ defmodule MyApp.Services.Twilio do
       <?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Gather input="speech" action="#{action}" method="POST"
-                speechTimeout="auto" language="#{language}"
+                speechTimeout="1" language="#{language}"
                 speechModel="phone_call" enhanced="true"
                 timeout="#{timeout}">
           #{inner_content}
@@ -68,6 +68,27 @@ defmodule MyApp.Services.Twilio do
     <?xml version="1.0" encoding="UTF-8"?>
     <Response>
       <Reject/>
+    </Response>
+    """
+  end
+
+  def twiml_stream(greeting, opts \\ []) do
+    stream_url = Keyword.fetch!(opts, :stream_url)
+    language = Keyword.get(opts, :language, "en-IN")
+    play_url = Keyword.get(opts, :play_url)
+
+    greet_tag =
+      if play_url,
+        do: "<Play>#{play_url}</Play>",
+        else: "<Say language=\"#{language}\">#{xml_escape(greeting)}</Say>"
+
+    """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+      #{greet_tag}
+      <Connect>
+        <Stream url="#{stream_url}" />
+      </Connect>
     </Response>
     """
   end
@@ -109,6 +130,10 @@ defmodule MyApp.Services.Twilio do
 
   def end_call(call_sid) do
     rest_request(:post, "/Calls/#{call_sid}.json", %{"Status" => "completed"})
+  end
+
+  def update_call(call_sid, twiml) do
+    rest_request(:post, "/Calls/#{call_sid}.json", %{"Twiml" => twiml})
   end
 
   def get_call(call_sid) do

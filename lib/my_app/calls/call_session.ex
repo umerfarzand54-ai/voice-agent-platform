@@ -248,14 +248,21 @@ defmodule MyApp.Calls.CallSession do
   defp synthesize(text, state) do
     start = System.monotonic_time(:millisecond)
 
+    sarvam_key = System.get_env("SARVAM_API_KEY")
+
     result =
       cond do
-        state.detected_language in @sarvam_languages ->
+        state.detected_language in @sarvam_languages && sarvam_key && sarvam_key != "" ->
           speaker = Map.get(state.agent.meta || %{}, "sarvam_speaker", "meera")
           SarvamAI.synthesize(text, language: state.detected_language, speaker: speaker)
 
         state.agent.voice_id ->
-          ElevenLabs.synthesize(text, state.agent.voice_id)
+          ElevenLabs.synthesize(text, state.agent.voice_id,
+            model_id: if(state.detected_language in @sarvam_languages,
+              do: "eleven_multilingual_v2",
+              else: "eleven_turbo_v2_5"
+            )
+          )
 
         true ->
           {:error, "No voice configured"}

@@ -14,9 +14,12 @@ defmodule MyApp.Services.SarvamAI do
   def transcribe(audio_binary, opts \\ []) do
     language = Keyword.get(opts, :language, "hi-IN")
     model = Keyword.get(opts, :model, "saarika:v1")
+    is_mulaw = Keyword.get(opts, :mulaw, false)
+
+    wav_bytes = if is_mulaw, do: mulaw_to_wav(audio_binary), else: audio_binary
 
     form_data = [
-      {"file", {audio_binary, filename: "audio.wav", content_type: "audio/wav"}},
+      {"file", {wav_bytes, filename: "audio.wav", content_type: "audio/wav"}},
       {"language_code", language},
       {"model", model}
     ]
@@ -31,6 +34,34 @@ defmodule MyApp.Services.SarvamAI do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp mulaw_to_wav(mulaw_bytes) do
+    sample_rate = 8000
+    num_channels = 1
+    bits_per_sample = 8
+    audio_format = 7
+    byte_rate = sample_rate * num_channels * div(bits_per_sample, 8)
+    block_align = num_channels * div(bits_per_sample, 8)
+    data_size = byte_size(mulaw_bytes)
+    chunk_size = 36 + data_size
+
+    <<
+      "RIFF",
+      chunk_size::little-32,
+      "WAVE",
+      "fmt ",
+      16::little-32,
+      audio_format::little-16,
+      num_channels::little-16,
+      sample_rate::little-32,
+      byte_rate::little-32,
+      block_align::little-16,
+      bits_per_sample::little-16,
+      "data",
+      data_size::little-32,
+      mulaw_bytes::binary
+    >>
   end
 
   def synthesize(text, opts \\ []) do
@@ -123,9 +154,15 @@ defmodule MyApp.Services.SarvamAI do
   defp request_multipart(method, path, form_data) do
     api_key = Application.get_env(:my_app, :sarvam_api_key) || System.get_env("SARVAM_API_KEY")
 
-    headers = [{"api-subscription-key", api_key}]
+    boundary = "boundary#{:crypto.strong_rand_bytes(8) |> Base.encode16()}"
+    {body, content_type} = encode_multipart(form_data, boundary)
 
-    case apply(Req, method, ["#{@base_url}#{path}", [headers: headers, form: form_data]]) do
+    headers = [
+      {"api-subscription-key", api_key},
+      {"content-type", content_type}
+    ]
+
+    case apply(Req, method, ["#{@base_url}#{path}", [headers: headers, body: body]]) do
       {:ok, %{status: status, body: body}} when status in 200..299 ->
         {:ok, body}
 
@@ -135,5 +172,21 @@ defmodule MyApp.Services.SarvamAI do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp encode_multipart(parts, boundary) do
+    body =
+      Enum.map_join(parts, "", fn
+        {name, {binary, opts}} when is_binary(binary) ->
+          filename = Keyword.get(opts, :filename, "file")
+          content_type = Keyword.get(opts, :content_type, "application/octet-stream")
+          "--#{boundary}\r\nContent-Disposition: form-data; name=\"#{name}\"; filename=\"#{filename}\"\r\nContent-Type: #{content_type}\r\n\r\n" <>
+            binary <> "\r\n"
+
+        {name, value} ->
+          "--#{boundary}\r\nContent-Disposition: form-data; name=\"#{name}\"\r\n\r\n#{value}\r\n"
+      end) <> "--#{boundary}--\r\n"
+
+    {body, "multipart/form-data; boundary=#{boundary}"}
   end
 end

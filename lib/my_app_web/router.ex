@@ -19,6 +19,12 @@ defmodule MyAppWeb.Router do
     plug :fetch_session
   end
 
+  scope "/", MyAppWeb do
+    pipe_through :twilio_webhook
+
+    get "/media-stream/websocket", MediaStreamController, :connect
+  end
+
   scope "/webhooks/twilio", MyAppWeb do
     pipe_through :twilio_webhook
 

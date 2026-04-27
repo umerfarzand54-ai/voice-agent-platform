@@ -5,12 +5,12 @@ defmodule MyApp.Services.Claude do
 
   @base_url "https://api.anthropic.com/v1"
   @api_version "2023-06-01"
-  @default_max_tokens 1024
+  @voice_max_tokens 256
 
   def complete(messages, opts \\ []) do
-    model = Keyword.get(opts, :model, "claude-sonnet-4-6")
+    model = Keyword.get(opts, :model, "claude-haiku-4-5-20251001")
     temperature = Keyword.get(opts, :temperature, 0.7)
-    max_tokens = Keyword.get(opts, :max_tokens, @default_max_tokens)
+    max_tokens = Keyword.get(opts, :max_tokens, @voice_max_tokens)
     system = Keyword.get(opts, :system)
 
     body =

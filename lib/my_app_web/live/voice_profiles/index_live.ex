@@ -28,7 +28,8 @@ defmodule MyAppWeb.VoiceProfilesLive.Index do
   end
 
   @impl true
-  def handle_event("clone_voice", %{"name" => name, "provider" => provider, "language" => language, "ai_agent_id" => agent_id}, socket) do
+  def handle_event("clone_voice", %{"name" => name, "language" => language, "ai_agent_id" => agent_id} = params, socket) do
+    provider = Map.get(params, "provider", "elevenlabs")
     audio_paths =
       consume_uploaded_entries(socket, :audio_samples, fn %{path: path}, entry ->
         dest = Path.join(System.tmp_dir!(), entry.client_name)
@@ -48,13 +49,14 @@ defmodule MyAppWeb.VoiceProfilesLive.Index do
             provider: provider,
             external_voice_id: voice_id,
             language: language,
-            ai_agent_id: if(agent_id == "", do: nil, else: agent_id),
+            ai_agent_id: if(agent_id == "", do: nil, else: String.to_integer(agent_id)),
             status: "ready",
-            active: true
+            active: false
           })
 
-        {:error, _reason} ->
-          :error
+        {:error, reason} ->
+          require Logger
+          Logger.error("Voice cloning failed: #{inspect(reason)}")
       end
 
       Enum.each(audio_paths, &File.rm/1)

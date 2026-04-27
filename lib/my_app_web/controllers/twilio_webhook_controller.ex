@@ -36,7 +36,6 @@ defmodule MyAppWeb.TwilioWebhookController do
 
         greeting = agent.initial_greeting || "Hello! How can I help you today?"
         action_url = "#{base_url(conn)}/webhooks/twilio/voice/gather?call_id=#{call.id}"
-
         {greeting_audio_url, _} = MyApp.Calls.CallSession.synthesize_greeting(call.id, greeting, agent)
 
         greeting_opt =
@@ -245,6 +244,12 @@ defmodule MyAppWeb.TwilioWebhookController do
   defp normalize_phone(phone) do
     trimmed = String.trim(phone)
     if String.starts_with?(trimmed, "+"), do: trimmed, else: "+" <> trimmed
+  end
+
+  defp build_stream_url(conn) do
+    http_base = base_url(conn)
+    ws_base = http_base |> String.replace("https://", "wss://") |> String.replace("http://", "ws://")
+    "#{ws_base}/media-stream/websocket"
   end
 
   defp base_url(conn) do
